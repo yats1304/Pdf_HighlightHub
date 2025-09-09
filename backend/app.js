@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
 import pdfRoutes from "./routes/pdf.js";
+import highlightRoutes from "./routes/highlight.js";
 
 dotenv.config();
 
@@ -12,10 +13,11 @@ const app = express();
 // Middleware setup
 app.use(express.json());
 app.use(cors());
-app.use("/api/pdfs", pdfRoutes);
 
 // Use auth routes
 app.use("/api/auth", authRoutes);
+app.use("/api/pdfs", pdfRoutes);
+app.use("/api/highlights", highlightRoutes);
 
 // MongoDB connection
 mongoose
