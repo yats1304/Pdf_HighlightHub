@@ -13,9 +13,14 @@ dotenv.config();
 
 const app = express();
 
-// Middleware setup
+// Configure CORS with options
+const corsOptions = {
+  origin: "http://localhost:3000", // your Next.js frontend URL
+  credentials: true, // if you use cookies/auth headers
+};
+
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Use auth routes
 app.use("/api/auth", authRoutes);
