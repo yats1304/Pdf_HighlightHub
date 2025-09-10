@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import BookParticles from "./components/BookParticles";
 
 const LandingPage = () => {
@@ -20,9 +21,11 @@ const LandingPage = () => {
           seamlessly.
         </p>
 
-        <button className="w-full sm:w-auto inline-block px-12 py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition transform hover:scale-105 duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-blue-500/50">
-          Get Started
-        </button>
+        <Link href="/login" passHref legacyBehavior>
+          <a className="w-full sm:w-auto inline-block px-12 py-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition transform hover:scale-105 duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-blue-500/50">
+            Get Started
+          </a>
+        </Link>
       </div>
     </div>
   );
