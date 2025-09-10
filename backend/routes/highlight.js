@@ -7,7 +7,20 @@ const router = Router();
 // Create new highlight
 router.post("/", auth, async (req, res) => {
   try {
-    const highlight = new Highlight(req.body);
+    const { pdfId, userId, pageNumber, text, position, color, notes, tags } =
+      req.body;
+
+    const highlight = new Highlight({
+      pdfId,
+      userId,
+      pageNumber,
+      text,
+      position,
+      color,
+      notes,
+      tags,
+    });
+
     await highlight.save();
     res.status(201).json(highlight);
   } catch (error) {
@@ -28,13 +41,34 @@ router.get("/:pdfId", auth, async (req, res) => {
 // Update a highlight
 router.put("/:id", auth, async (req, res) => {
   try {
+    const { pdfId, userId, pageNumber, text, position, color, notes, tags } =
+      req.body;
+
+    const updatedFields = {
+      pdfId,
+      userId,
+      pageNumber,
+      text,
+      position,
+      color,
+      notes,
+      tags,
+    };
+
+    // Remove undefined fields for partial update
+    Object.keys(updatedFields).forEach(
+      (key) => updatedFields[key] === undefined && delete updatedFields[key]
+    );
+
     const highlight = await Highlight.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updatedFields,
       { new: true }
     );
+
     if (!highlight)
       return res.status(404).json({ message: "Highlight not found" });
+
     res.json(highlight);
   } catch (error) {
     res.status(400).json({ error: error.message });

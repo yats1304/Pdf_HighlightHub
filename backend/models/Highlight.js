@@ -16,7 +16,9 @@ const highlightSchema = new mongoose.Schema(
       width: Number,
       height: Number,
     },
-    color: { type: String, default: "#FFFF00" }, // Yellow
+    color: { type: String, default: "#FFFF00" },
+    notes: { type: String, default: "" },
+    tags: { type: [String], default: [] },
   },
   {
     timestamps: true,
