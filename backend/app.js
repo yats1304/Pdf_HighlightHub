@@ -5,6 +5,9 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
 import pdfRoutes from "./routes/pdf.js";
 import highlightRoutes from "./routes/highlight.js";
+import PDF from "./models/Pdf.js";
+import Highlight from "./models/Highlight.js";
+import searchRoutes from "./routes/search.js";
 
 dotenv.config();
 
@@ -18,11 +21,23 @@ app.use(cors());
 app.use("/api/auth", authRoutes);
 app.use("/api/pdfs", pdfRoutes);
 app.use("/api/highlights", highlightRoutes);
+app.use("/api", searchRoutes);
 
 // MongoDB connection
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => console.log("MongoDB connected successfully"))
+  .then(async () => {
+    console.log("MongoDB connected successfully");
+
+    // Create text indexes once on server startup
+    try {
+      await PDF.collection.createIndex({ originalName: "text" });
+      await Highlight.collection.createIndex({ text: "text" });
+      console.log("Text indexes created successfully");
+    } catch (error) {
+      console.error("Error creating text indexes:", error);
+    }
+  })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Basic sanity check route

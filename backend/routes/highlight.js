@@ -1,10 +1,11 @@
 import { Router } from "express";
 import Highlight from "../models/Highlight.js";
+import auth from "../middleware/auth.js";
 
 const router = Router();
 
 // Create new highlight
-router.post("/", async (req, res) => {
+router.post("/", auth, async (req, res) => {
   try {
     const highlight = new Highlight(req.body);
     await highlight.save();
@@ -15,7 +16,7 @@ router.post("/", async (req, res) => {
 });
 
 // Get highlights for a specific PDF
-router.get("/:pdfId", async (req, res) => {
+router.get("/:pdfId", auth, async (req, res) => {
   try {
     const highlights = await Highlight.find({ pdfId: req.params.pdfId });
     res.json(highlights);
@@ -25,7 +26,7 @@ router.get("/:pdfId", async (req, res) => {
 });
 
 // Update a highlight
-router.put("/:id", async (req, res) => {
+router.put("/:id", auth, async (req, res) => {
   try {
     const highlight = await Highlight.findByIdAndUpdate(
       req.params.id,
@@ -41,7 +42,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete a highlight
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, async (req, res) => {
   try {
     const highlight = await Highlight.findByIdAndDelete(req.params.id);
     if (!highlight)
