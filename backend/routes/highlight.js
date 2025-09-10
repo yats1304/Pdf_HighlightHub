@@ -4,11 +4,21 @@ import auth from "../middleware/auth.js";
 
 const router = Router();
 
-// Create new highlight
+// Create new highlight or drawing annotation
 router.post("/", auth, async (req, res) => {
   try {
-    const { pdfId, userId, pageNumber, text, position, color, notes, tags } =
-      req.body;
+    const {
+      pdfId,
+      userId,
+      pageNumber,
+      text,
+      position,
+      color,
+      notes,
+      tags,
+      type,
+      drawingData,
+    } = req.body;
 
     const highlight = new Highlight({
       pdfId,
@@ -19,6 +29,8 @@ router.post("/", auth, async (req, res) => {
       color,
       notes,
       tags,
+      type,
+      drawingData,
     });
 
     await highlight.save();
@@ -38,11 +50,21 @@ router.get("/:pdfId", auth, async (req, res) => {
   }
 });
 
-// Update a highlight
+// Update a highlight or drawing annotation
 router.put("/:id", auth, async (req, res) => {
   try {
-    const { pdfId, userId, pageNumber, text, position, color, notes, tags } =
-      req.body;
+    const {
+      pdfId,
+      userId,
+      pageNumber,
+      text,
+      position,
+      color,
+      notes,
+      tags,
+      type,
+      drawingData,
+    } = req.body;
 
     const updatedFields = {
       pdfId,
@@ -53,6 +75,8 @@ router.put("/:id", auth, async (req, res) => {
       color,
       notes,
       tags,
+      type,
+      drawingData,
     };
 
     // Remove undefined fields for partial update
@@ -75,7 +99,7 @@ router.put("/:id", auth, async (req, res) => {
   }
 });
 
-// Delete a highlight
+// Delete a highlight or drawing annotation
 router.delete("/:id", auth, async (req, res) => {
   try {
     const highlight = await Highlight.findByIdAndDelete(req.params.id);

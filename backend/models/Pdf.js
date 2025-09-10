@@ -19,6 +19,19 @@ const pdfSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  sharedWith: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      permission: {
+        type: String,
+        enum: ["view", "edit"],
+        default: "view",
+      },
+    },
+  ],
 });
 
 const Pdf = mongoose.model("Pdf", pdfSchema);

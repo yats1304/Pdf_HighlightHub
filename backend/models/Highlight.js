@@ -9,7 +9,7 @@ const highlightSchema = new mongoose.Schema(
       required: true,
     },
     pageNumber: { type: Number, required: true },
-    text: { type: String, required: true },
+    text: { type: String }, // made optional to support drawing only annotations
     position: {
       x: Number,
       y: Number,
@@ -19,6 +19,14 @@ const highlightSchema = new mongoose.Schema(
     color: { type: String, default: "#FFFF00" },
     notes: { type: String, default: "" },
     tags: { type: [String], default: [] },
+
+    // New fields for drawing annotations
+    type: {
+      type: String,
+      enum: ["text", "freehand", "arrow", "shape"],
+      required: true,
+    },
+    drawingData: { type: mongoose.Schema.Types.Mixed },
   },
   {
     timestamps: true,
