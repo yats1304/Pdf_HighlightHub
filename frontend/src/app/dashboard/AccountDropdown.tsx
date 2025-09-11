@@ -3,16 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-interface User {
-  name?: string;
-  email?: string;
-}
-
-interface AccountDropdownProps {
-  user: User | null;
-}
-
-export default function AccountDropdown({ user }: AccountDropdownProps) {
+export default function AccountDropdown() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -45,12 +36,8 @@ export default function AccountDropdown({ user }: AccountDropdownProps) {
       >
         My Account
       </button>
-      {open && user && (
-        <div className="absolute right-0 mt-2 w-64 bg-gray-800 rounded-lg shadow-lg z-20">
-          <div className="p-4 border-b border-gray-700">
-            <p className="text-white font-semibold">{user.name || "User"}</p>
-            <p className="text-gray-400 text-sm truncate">{user.email}</p>
-          </div>
+      {open && (
+        <div className="absolute right-0 mt-3 w-48 bg-gray-700 bg-opacity-95 rounded-lg shadow-xl border border-gray-600 z-20">
           <button
             onClick={handleSignOut}
             className="block w-full text-left px-4 py-2 text-red-500 hover:bg-red-600 hover:text-white rounded-b-lg font-semibold"
