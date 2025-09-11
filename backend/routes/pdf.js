@@ -33,10 +33,10 @@ router.post("/uploads", auth, upload.single("pdf"), async (req, res) => {
     const newPdf = new Pdf({
       uuid: filename.split("-")[0],
       originalName: originalname,
-      filename, // Store saved filename for later serving
+      filename,
       userId,
-      uploadDate: new Date(), // Ensure uploadDate is saved
-      status: "Pending", // Default status, can be updated later
+      uploadDate: new Date(),
+      status: "Pending",
     });
 
     await newPdf.save();
@@ -53,6 +53,26 @@ router.post("/uploads", auth, upload.single("pdf"), async (req, res) => {
   }
 });
 
+// Delete PDF endpoint
+router.delete("/:pdfId", auth, async (req, res) => {
+  try {
+    const pdf = await Pdf.findById(req.params.pdfId);
+
+    if (!pdf) return res.status(404).json({ message: "PDF not found" });
+
+    // Only owner can delete
+    if (pdf.userId.toString() !== req.user.userId)
+      return res.status(403).json({ message: "Forbidden" });
+
+    await pdf.deleteOne();
+
+    res.json({ message: "PDF deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting PDF:", error);
+    res.status(500).json({ message: "Server error deleting PDF" });
+  }
+});
+
 // Share PDF with another user
 router.post("/:pdfId/share", auth, async (req, res) => {
   try {
@@ -61,13 +81,11 @@ router.post("/:pdfId/share", auth, async (req, res) => {
 
     if (!pdf) return res.status(404).json({ message: "PDF not found" });
 
-    // Only owner can share
     if (pdf.userId.toString() !== req.user.userId)
       return res
         .status(403)
         .json({ message: "Forbidden, only owner can share" });
 
-    // Add or update shared user permission
     const existingEntry = pdf.sharedWith.find(
       (entry) => entry.userId.toString() === userIdToShare
     );
@@ -94,7 +112,6 @@ router.post("/:pdfId/unshare", auth, async (req, res) => {
 
     if (!pdf) return res.status(404).json({ message: "PDF not found" });
 
-    // Only owner can unshare
     if (pdf.userId.toString() !== req.user.userId)
       return res
         .status(403)
