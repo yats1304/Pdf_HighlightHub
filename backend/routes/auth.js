@@ -8,7 +8,7 @@ const router = Router();
 // Signup route
 router.post("/signup", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, email, password } = req.body;
 
     // Basic validation
     if (!email || !password) {
@@ -27,8 +27,9 @@ router.post("/signup", async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Create new user
+    // Create new user with name
     const newUser = new User({
+      name, // Save name here
       email,
       passwordHash,
     });
@@ -77,7 +78,14 @@ router.post("/login", async (req, res) => {
       expiresIn: "24h",
     });
 
-    res.json({ token });
+    // Return token AND user info including name
+    res.json({
+      token,
+      user: {
+        name: user.name || "User",
+        email: user.email,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error during login" });

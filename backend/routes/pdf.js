@@ -123,4 +123,26 @@ router.get("/shared/me", auth, async (req, res) => {
   }
 });
 
+// New route: GET /api/pdfs to fetch PDFs uploaded by authenticated user
+router.get("/", auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const pdfs = await Pdf.find({ userId }).lean().exec();
+
+    const result = pdfs.map((pdf) => ({
+      id: pdf._id.toString(),
+      name: pdf.originalName || pdf.name,
+      status: pdf.status || "Pending",
+      uploaded: pdf.createdAt || pdf.uploadDate || new Date(),
+      thumbnail: pdf.thumbnailUrl || "",
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching PDFs for dashboard:", error);
+    res.status(500).json({ message: "Server error fetching PDFs" });
+  }
+});
+
 export default router;

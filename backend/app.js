@@ -8,6 +8,7 @@ import highlightRoutes from "./routes/highlight.js";
 import PDF from "./models/Pdf.js";
 import Highlight from "./models/Highlight.js";
 import searchRoutes from "./routes/search.js";
+import activityRoutes from "./routes/activity.js";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/pdfs", pdfRoutes);
 app.use("/api/highlights", highlightRoutes);
 app.use("/api", searchRoutes);
+app.use("/api/activity", activityRoutes);
 
 // MongoDB connection
 mongoose
