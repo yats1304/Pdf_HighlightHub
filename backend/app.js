@@ -9,6 +9,7 @@ import PDF from "./models/Pdf.js";
 import Highlight from "./models/Highlight.js";
 import searchRoutes from "./routes/search.js";
 import activityRoutes from "./routes/activity.js";
+import path from "path";
 
 dotenv.config();
 
@@ -22,6 +23,9 @@ const corsOptions = {
 
 app.use(express.json());
 app.use(cors(corsOptions));
+
+// Serve uploads folder statically
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Use auth routes
 app.use("/api/auth", authRoutes);

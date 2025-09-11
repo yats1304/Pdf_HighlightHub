@@ -53,6 +53,42 @@ router.post("/uploads", auth, upload.single("pdf"), async (req, res) => {
   }
 });
 
+// Get PDFs uploaded by authenticated user
+router.get("/", auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const pdfs = await Pdf.find({ userId }).lean().exec();
+
+    const result = pdfs.map((pdf) => ({
+      id: pdf._id.toString(),
+      name: pdf.originalName || pdf.name,
+      status: pdf.status || "Pending",
+      uploaded: pdf.uploadDate || new Date(),
+      thumbnail: pdf.thumbnailUrl || "",
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching PDFs for dashboard:", error);
+    res.status(500).json({ message: "Server error fetching PDFs" });
+  }
+});
+
+// Get single PDF by ID
+router.get("/:id", auth, async (req, res) => {
+  try {
+    const pdf = await Pdf.findById(req.params.id);
+    if (!pdf) {
+      return res.status(404).json({ message: "PDF not found" });
+    }
+    res.json(pdf);
+  } catch (error) {
+    console.error("Error fetching PDF by ID:", error);
+    res.status(500).json({ message: "Server error fetching PDF" });
+  }
+});
+
 // Delete PDF endpoint
 router.delete("/:pdfId", auth, async (req, res) => {
   try {
@@ -140,28 +176,6 @@ router.get("/shared/me", auth, async (req, res) => {
   } catch (error) {
     console.error("Error fetching shared PDFs:", error);
     res.status(500).json({ message: "Server error fetching shared PDFs" });
-  }
-});
-
-// Get PDFs uploaded by authenticated user
-router.get("/", auth, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-
-    const pdfs = await Pdf.find({ userId }).lean().exec();
-
-    const result = pdfs.map((pdf) => ({
-      id: pdf._id.toString(),
-      name: pdf.originalName || pdf.name,
-      status: pdf.status || "Pending",
-      uploaded: pdf.uploadDate || new Date(),
-      thumbnail: pdf.thumbnailUrl || "",
-    }));
-
-    res.json(result);
-  } catch (error) {
-    console.error("Error fetching PDFs for dashboard:", error);
-    res.status(500).json({ message: "Server error fetching PDFs" });
   }
 });
 
