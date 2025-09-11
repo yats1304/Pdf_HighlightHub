@@ -18,7 +18,7 @@ export default function Header({ user }: HeaderProps) {
       <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 sm:mb-0 drop-shadow">
         Dashboard
       </h1>
-      <AccountDropdown user={user} />
+      <AccountDropdown />
     </header>
   );
 }

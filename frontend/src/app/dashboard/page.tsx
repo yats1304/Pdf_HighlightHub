@@ -32,13 +32,17 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [user, setUser] = useState<User | null>(null);
 
+  // Initial data fetch only
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    async function fetchData() {
+  const fetchData = async () => {
+    setLoading(true);
+    setError("");
+    try {
       const token = localStorage.getItem("token");
       if (!token) {
         setError("You must be logged in to view the dashboard.");
@@ -46,56 +50,77 @@ export default function Dashboard() {
         return;
       }
 
-      try {
-        const [pdfsRes, activityRes] = await Promise.all([
-          fetch("http://localhost:5000/api/pdfs", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch("http://localhost:5000/api/activity", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+      const [pdfsRes, activityRes] = await Promise.all([
+        fetch("http://localhost:5000/api/pdfs", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("http://localhost:5000/api/activity", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
-        if (!pdfsRes.ok || !activityRes.ok) {
-          throw new Error("Failed to fetch data");
-        }
-
-        const rawPdfs = await pdfsRes.json();
-        const rawActivities = await activityRes.json();
-
-        // Map PDFs data to frontend expected format
-        const mappedPdfs = rawPdfs.map((pdf: any) => ({
-          id: pdf._id || pdf.id,
-          name: pdf.originalName || pdf.name || "Untitled PDF",
-          status: pdf.status || "Pending",
-          uploaded: pdf.uploadDate || pdf.uploaded || new Date().toISOString(),
-          thumbnail: pdf.thumbnail || undefined,
-        }));
-
-        // Map activity data to frontend expected format
-        const mappedActivity = rawActivities.map((act: any) => ({
-          id: act._id || act.id || Math.random().toString(), // fallback id
-          message: act.message || "Activity",
-          file: act.file || act.text || "Unknown",
-          when:
-            act.when ||
-            (act.createdAt
-              ? new Date(act.createdAt).toLocaleDateString()
-              : "Unknown Date"),
-        }));
-
-        setPdfs(mappedPdfs);
-        setActivity(mappedActivity);
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-        setError("Error loading dashboard data");
-      } finally {
-        setLoading(false);
+      if (!pdfsRes.ok || !activityRes.ok) {
+        throw new Error("Failed to fetch data");
       }
-    }
 
-    fetchData();
-  }, []);
+      const rawPdfs = await pdfsRes.json();
+      const rawActivities = await activityRes.json();
+
+      const mappedPdfs = rawPdfs.map((pdf: any) => ({
+        id: pdf._id || pdf.id,
+        name: pdf.originalName || pdf.name || "Untitled PDF",
+        status: pdf.status || "Pending",
+        uploaded: pdf.uploadDate || pdf.uploaded || new Date().toISOString(),
+        thumbnail: pdf.thumbnail || undefined,
+      }));
+
+      const mappedActivity = rawActivities.map((act: any) => ({
+        id: act._id || act.id || Math.random().toString(),
+        message: act.message || "Activity",
+        file: act.file || act.text || "Unknown",
+        when:
+          act.when ||
+          (act.createdAt
+            ? new Date(act.createdAt).toLocaleDateString()
+            : "Unknown Date"),
+      }));
+
+      setPdfs(mappedPdfs);
+      setActivity(mappedActivity);
+    } catch (err) {
+      console.error("Dashboard fetch error:", err);
+      setError("Error loading dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Incremental removal on delete without full fetch
+  const handleDeletePdf = async (pdfId: string) => {
+    if (!confirm("Are you sure you want to delete this PDF?")) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:5000/api/pdfs/${pdfId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete PDF");
+
+      // Update state locally
+      setPdfs((prev) => prev.filter((pdf) => pdf.id !== pdfId));
+    } catch (err: any) {
+      alert("Error deleting PDF: " + (err.message || "Unknown error"));
+    }
+  };
+
+  // Incremental addition on upload without full fetch
+  const handleUploadSuccess = (newPdf: PDF) => {
+    setPdfs((prev) => [newPdf, ...prev]);
+  };
 
   if (loading)
     return (
@@ -115,7 +140,11 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 sm:p-8">
       <Header user={user} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <PdfList pdfs={pdfs} />
+        <PdfList
+          pdfs={pdfs}
+          onUploadSuccess={handleUploadSuccess}
+          onDeletePdf={handleDeletePdf}
+        />
         <ActivityList activity={activity} />
       </div>
     </div>
