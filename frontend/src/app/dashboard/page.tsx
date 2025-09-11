@@ -110,7 +110,6 @@ export default function Dashboard() {
 
       if (!res.ok) throw new Error("Failed to delete PDF");
 
-      // Update state locally
       setPdfs((prev) => prev.filter((pdf) => pdf.id !== pdfId));
     } catch (err: any) {
       alert("Error deleting PDF: " + (err.message || "Unknown error"));

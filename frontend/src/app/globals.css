@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/* PDF.js text layer styling */
+.react-pdf__Page__textContent {
+  font-family: sans-serif;
+  font-size: 1em;
+  user-select: text;
+  text-align: initial;
+}
+
+/* PDF.js annotation layer styling */
+.react-pdf__Page__annotations {
+  user-select: none;
+}
