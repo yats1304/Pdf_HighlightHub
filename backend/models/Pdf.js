@@ -10,6 +10,10 @@ const pdfSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  filename: {
+    type: String,
+    required: true,
+  },
   uploadDate: {
     type: Date,
     default: Date.now,
@@ -18,6 +22,14 @@ const pdfSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
+  },
+  status: {
+    type: String,
+    enum: ["Pending", "Annotated"],
+    default: "Pending",
+  },
+  thumbnailUrl: {
+    type: String,
   },
   sharedWith: [
     {

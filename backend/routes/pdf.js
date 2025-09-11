@@ -20,20 +20,23 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Upload PDF endpoint
-router.post("/upload", auth, upload.single("pdf"), async (req, res) => {
+router.post("/uploads", auth, upload.single("pdf"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
     const { originalname, filename } = req.file;
-    const userId = req.user.userId; // Use authenticated user ID
+    const userId = req.user.userId; // Authenticated user ID
 
     // Save PDF metadata
     const newPdf = new Pdf({
       uuid: filename.split("-")[0],
       originalName: originalname,
+      filename, // Store saved filename for later serving
       userId,
+      uploadDate: new Date(), // Ensure uploadDate is saved
+      status: "Pending", // Default status, can be updated later
     });
 
     await newPdf.save();
@@ -45,7 +48,7 @@ router.post("/upload", auth, upload.single("pdf"), async (req, res) => {
       originalName: newPdf.originalName,
     });
   } catch (error) {
-    console.error(error);
+    console.error("File upload error:", error);
     res.status(500).json({ message: "Server error during file upload" });
   }
 });
@@ -78,7 +81,7 @@ router.post("/:pdfId/share", auth, async (req, res) => {
     await pdf.save();
     res.json({ message: "PDF shared successfully" });
   } catch (error) {
-    console.error(error);
+    console.error("Error sharing PDF:", error);
     res.status(500).json({ message: "Server error during sharing" });
   }
 });
@@ -104,7 +107,7 @@ router.post("/:pdfId/unshare", auth, async (req, res) => {
     await pdf.save();
     res.json({ message: "PDF unshared successfully" });
   } catch (error) {
-    console.error(error);
+    console.error("Error unsharing PDF:", error);
     res.status(500).json({ message: "Server error during unsharing" });
   }
 });
@@ -118,12 +121,12 @@ router.get("/shared/me", auth, async (req, res) => {
 
     res.json(sharedPdfs);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching shared PDFs:", error);
     res.status(500).json({ message: "Server error fetching shared PDFs" });
   }
 });
 
-// New route: GET /api/pdfs to fetch PDFs uploaded by authenticated user
+// Get PDFs uploaded by authenticated user
 router.get("/", auth, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -134,7 +137,7 @@ router.get("/", auth, async (req, res) => {
       id: pdf._id.toString(),
       name: pdf.originalName || pdf.name,
       status: pdf.status || "Pending",
-      uploaded: pdf.createdAt || pdf.uploadDate || new Date(),
+      uploaded: pdf.uploadDate || new Date(),
       thumbnail: pdf.thumbnailUrl || "",
     }));
 

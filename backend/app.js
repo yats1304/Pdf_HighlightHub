@@ -16,8 +16,8 @@ const app = express();
 
 // Configure CORS with options
 const corsOptions = {
-  origin: "http://localhost:3000", // your Next.js frontend URL
-  credentials: true, // if you use cookies/auth headers
+  origin: "http://localhost:3000",
+  credentials: true,
 };
 
 app.use(express.json());
