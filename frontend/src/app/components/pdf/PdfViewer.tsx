@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { Document, Page, pdfjs } from "react-pdf";
 import useWindowSize from "../../hooks/useWindowSize";
 import {
@@ -12,6 +13,7 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiMaximize2,
+  FiArrowUpLeft,
 } from "react-icons/fi";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
@@ -75,7 +77,6 @@ export default function PdfViewer({
   const zoomIn = () => setZoom((z) => Math.min(z + 0.2, 2));
   const zoomOut = () => setZoom((z) => Math.max(z - 0.2, baseScale));
 
-  // Helper to display size in readable format (if provided as bytes)
   function humanFileSize(size: string): string {
     if (!size) return "";
     const bytes = parseFloat(size);
@@ -117,22 +118,31 @@ export default function PdfViewer({
 
   return (
     <div
-      className={`fixed inset-0 z-10 flex flex-col items-center bg-[#22252c] min-h-full min-w-full ${className}`}
+      className={`fixed inset-0 z-10 flex flex-col bg-[#22252c] min-h-full min-w-full ${className}`}
       style={{ background: "#21232a" }}
     >
-      {/* Toolbar */}
+      {/* Responsive Toolbar */}
       <div
-        className="w-full max-w-5xl mx-auto flex items-center justify-between px-6 py-4 bg-[#242630] bg-opacity-95 shadow-lg rounded-xl mt-7"
-        style={{
-          position: "sticky",
-          top: 0,
-          left: 0,
-          zIndex: 20,
-        }}
+        className={`
+          w-full max-w-5xl mx-auto flex flex-wrap sm:flex-nowrap
+          items-center justify-between gap-2
+          px-2 sm:px-6 py-2 sm:py-4
+          bg-[#242630] bg-opacity-95 shadow-lg rounded-xl mt-2 sm:mt-7
+          sticky top-0 left-0 z-20
+        `}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Back to Dashboard Button */}
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1 px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition"
+            aria-label="Back to Dashboard"
+          >
+            <FiArrowUpLeft size={18} />
+            <span className="hidden xs:inline sm:inline">Dashboard</span>
+          </Link>
           <FiArrowLeft
-            size={26}
+            size={22}
             className="text-gray-300 hover:text-blue-500 cursor-pointer"
             onClick={() => changePage(-1)}
             style={{
@@ -141,7 +151,7 @@ export default function PdfViewer({
             }}
           />
           <FiArrowRight
-            size={26}
+            size={22}
             className="text-gray-300 hover:text-blue-500 cursor-pointer"
             onClick={() => changePage(1)}
             style={{
@@ -149,14 +159,22 @@ export default function PdfViewer({
               pointerEvents: pageNumber >= numPages ? "none" : "auto",
             }}
           />
-          <span className="ml-2 px-3 py-1 rounded font-semibold bg-[#1e293b] text-blue-400">
+          {/* Hide filename/details on mobile */}
+          <span
+            className="ml-2 px-2 py-1 rounded font-semibold bg-[#1e293b] text-blue-400 truncate hidden sm:inline-block"
+            style={{ maxWidth: 140 }}
+          >
             {fileName}
           </span>
-          <span className="ml-2 text-xs text-gray-400 opacity-90">
+          <span
+            className="ml-2 text-xs text-gray-400 opacity-90 truncate hidden sm:inline-block"
+            style={{ maxWidth: 80 }}
+          >
             PDF {fileSize && `| ${humanFileSize(fileSize)}`}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        {/* Controls */}
+        <div className="flex flex-row flex-wrap gap-1 items-center justify-end">
           <button
             onClick={zoomOut}
             disabled={zoom <= baseScale}
@@ -166,7 +184,7 @@ export default function PdfViewer({
           >
             <FiMinus size={20} />
           </button>
-          <span className="px-2 py-1 text-xs font-bold rounded bg-[#334155] text-blue-300 select-none">
+          <span className="px-2 py-1 text-xs font-bold rounded bg-[#334155] text-blue-300 select-none min-w-[45px] text-center">
             {Math.round(effectiveScale * 100)}%
           </span>
           <button
@@ -213,22 +231,18 @@ export default function PdfViewer({
           >
             <FiMaximize2 size={20} />
           </button>
-        </div>
-        <div className="flex items-center gap-3 text-blue-400">
-          <span>
-            <span className="bg-[#1e293b] px-2 py-1 rounded font-semibold">
-              {pageNumber}
-            </span>{" "}
-            <span className="text-gray-400">of</span>{" "}
-            <span className="bg-[#1e293b] px-2 py-1 rounded font-semibold">
-              {numPages}
-            </span>
+          {/* Page info always visible */}
+          <span className="px-2 py-1 ml-1 rounded bg-[#1e293b] text-blue-400 font-semibold min-w-[56px] text-center text-sm">
+            {pageNumber} <span className="text-gray-400">of</span> {numPages}
           </span>
         </div>
       </div>
 
       {/* PDF Center Card */}
-      <div className="flex-1 flex items-center justify-center w-full h-full p-4 overflow-auto">
+      <div
+        className="flex-1 w-full max-w-4xl mx-auto p-4 overflow-auto"
+        style={{ minHeight: 0 }}
+      >
         <div
           className="bg-[#181a20] shadow-2xl rounded-xl mx-auto flex items-center justify-center"
           style={{
