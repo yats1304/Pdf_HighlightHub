@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import PdfViewer from "../../components/pdf/PdfViewer";
+import dynamic from "next/dynamic";
+
+const PdfViewer = dynamic(() => import("../../components/pdf/PdfViewer"), {
+  ssr: false,
+});
 
 export default function PdfDetailPage() {
   const params = useParams();

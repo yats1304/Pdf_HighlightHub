@@ -1,45 +1,43 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
-import Link from "next/link";
-import { Document, Page, pdfjs } from "react-pdf";
+import React, { useState, useCallback, useMemo, useRef } from "react";
+import Toolbar from "./Toolbar";
+import PdfPageHighlights from "./PdfPageWithHighlights";
 import useWindowSize from "../../hooks/useWindowSize";
-import {
-  FiDownload,
-  FiPrinter,
-  FiShare2,
-  FiMinus,
-  FiPlus,
-  FiArrowLeft,
-  FiArrowRight,
-  FiMaximize2,
-  FiArrowUpLeft,
-} from "react-icons/fi";
+import { pdfjs } from "react-pdf";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
+
+interface Highlight {
+  id: string;
+  pageNumber: number;
+  rects: { top: number; left: number; width: number; height: number }[];
+  text: string;
+}
 
 interface PdfViewerProps {
   fileUrl: string;
   fileName?: string;
   fileSize?: string;
   className?: string;
-  onPageChange?: (page: number) => void;
+  onChangePage?: (page: number) => void;
 }
 
 export default function PdfViewer({
   fileUrl,
-  fileName = "",
-  fileSize = "",
-  className = "",
-  onPageChange,
+  fileName,
+  fileSize,
+  className,
+  onChangePage,
 }: PdfViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
+  const [zoom, setZoom] = useState<number>(1);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [pageDimensions, setPageDimensions] = useState<{
     width: number;
     height: number;
   } | null>(null);
-  const [zoom, setZoom] = useState<number>(1);
   const windowSize = useWindowSize();
 
   const pdfOptions = useMemo(
@@ -50,13 +48,15 @@ export default function PdfViewer({
     []
   );
 
+  const pdfPageRef = useRef<HTMLDivElement>(null);
+
   const onDocumentLoadSuccess = useCallback(
     ({ numPages }: { numPages: number }) => {
       setNumPages(numPages);
       setPageNumber(1);
-      if (onPageChange) onPageChange(1);
+      if (onChangePage) onChangePage(1);
     },
-    [onPageChange]
+    [onChangePage]
   );
 
   const onPageLoadSuccess = useCallback((page: any) => {
@@ -66,211 +66,115 @@ export default function PdfViewer({
     });
   }, []);
 
-  const changePage = (offset: number) => {
-    setPageNumber((prevPage) => {
-      const newPage = Math.min(Math.max(prevPage + offset, 1), numPages);
-      if (onPageChange) onPageChange(newPage);
-      return newPage;
-    });
-  };
+  const changePage = useCallback(
+    (offset: number) => {
+      setPageNumber((current) => {
+        const newPage = Math.min(Math.max(current + offset, 1), numPages);
+        if (onChangePage) onChangePage(newPage);
+        return newPage;
+      });
+    },
+    [numPages, onChangePage]
+  );
 
-  const zoomIn = () => setZoom((z) => Math.min(z + 0.2, 2));
-  const zoomOut = () => setZoom((z) => Math.max(z - 0.2, baseScale));
+  const zoomIn = useCallback(() => setZoom((z) => Math.min(z + 0.2, 2)), []);
+  const zoomOut = useCallback(() => setZoom((z) => Math.max(z - 0.2, 0.5)), []);
 
-  function humanFileSize(size: string): string {
-    if (!size) return "";
-    const bytes = parseFloat(size);
-    if (isNaN(bytes)) return size;
-    const thresh = 1024;
-    if (bytes < thresh) return bytes + " B";
-    const units = ["KB", "MB", "GB", "TB"];
-    let u = -1;
-    let b = bytes;
-    do {
-      b /= thresh;
-      ++u;
-    } while (b >= thresh && u < units.length - 1);
-    return b.toFixed(2) + " " + units[u];
-  }
-
-  // Responsive scale base
   const padding = 32;
   const toolbarHeight = 76;
   const viewportWidth = windowSize?.width || 600;
   const viewportHeight = windowSize?.height || 800;
   const maxWidth = viewportWidth - padding * 2;
   const maxHeight = viewportHeight - toolbarHeight - padding * 2;
+
   let baseScale = 1;
   if (pageDimensions) {
-    const scaleX = maxWidth / pageDimensions.width;
-    const scaleY = maxHeight / pageDimensions.height;
-    baseScale = Math.min(scaleX, scaleY, 1);
+    baseScale = Math.min(
+      maxWidth / pageDimensions.width,
+      maxHeight / pageDimensions.height,
+      1
+    );
   }
   const effectiveScale = baseScale * zoom;
 
+  const handleHighlightSelection = useCallback(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+
+    const text = sel.toString().trim();
+    if (text.length === 0) return;
+    if (!pdfPageRef.current) return;
+
+    const range = sel.getRangeAt(0);
+    const containerRect = pdfPageRef.current.getBoundingClientRect();
+
+    const rects: {
+      top: number;
+      left: number;
+      width: number;
+      height: number;
+    }[] = [];
+
+    for (let i = 0; i < range.getClientRects().length; i++) {
+      const r = range.getClientRects()[i];
+      rects.push({
+        top:
+          (r.top - containerRect.top + pdfPageRef.current.scrollTop) /
+          effectiveScale,
+        left:
+          (r.left - containerRect.left + pdfPageRef.current.scrollLeft) /
+          effectiveScale,
+        width: r.width / effectiveScale,
+        height: r.height / effectiveScale,
+      });
+    }
+
+    if (rects.length === 0) return;
+
+    setHighlights((current) => [
+      ...current,
+      { id: Date.now().toString(), pageNumber, rects, text },
+    ]);
+    sel.removeAllRanges();
+  }, [pageNumber, effectiveScale]);
+
   if (!fileUrl) {
-    return (
-      <div className="text-center p-6 text-red-500">
-        No PDF found or loaded.
-      </div>
-    );
+    return <div className="text-center p-6 text-red-500">No PDF loaded</div>;
   }
 
   return (
     <div
-      className={`fixed inset-0 z-10 flex flex-col bg-[#22252c] min-h-full min-w-full ${className}`}
-      style={{ background: "#21232a" }}
+      className={`fixed inset-0 z-10 flex flex-col bg-[#222] min-h-full min-w-full ${className}`}
     >
-      {/* Responsive Toolbar */}
+      <Toolbar
+        pageNumber={pageNumber}
+        numPages={numPages}
+        fileName={fileName}
+        fileSize={fileSize}
+        zoom={zoom}
+        baseScale={baseScale}
+        effectiveScale={effectiveScale}
+        changePage={changePage}
+        zoomIn={zoomIn}
+        zoomOut={zoomOut}
+        fileUrl={fileUrl}
+        highlightsCount={highlights.length} // Pass highlight count
+        onUndoHighlight={() => setHighlights(highlights.slice(0, -1))} // Pass undo function
+      />
       <div
-        className={`
-          w-full max-w-5xl mx-auto flex flex-wrap sm:flex-nowrap
-          items-center justify-between gap-2
-          px-2 sm:px-6 py-2 sm:py-4
-          bg-[#242630] bg-opacity-95 shadow-lg rounded-xl mt-2 sm:mt-7
-          sticky top-0 left-0 z-20
-        `}
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          {/* Back to Dashboard Button */}
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1 px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition"
-            aria-label="Back to Dashboard"
-          >
-            <FiArrowUpLeft size={18} />
-            <span className="hidden xs:inline sm:inline">Dashboard</span>
-          </Link>
-          <FiArrowLeft
-            size={22}
-            className="text-gray-300 hover:text-blue-500 cursor-pointer"
-            onClick={() => changePage(-1)}
-            style={{
-              opacity: pageNumber <= 1 ? 0.5 : 1,
-              pointerEvents: pageNumber <= 1 ? "none" : "auto",
-            }}
-          />
-          <FiArrowRight
-            size={22}
-            className="text-gray-300 hover:text-blue-500 cursor-pointer"
-            onClick={() => changePage(1)}
-            style={{
-              opacity: pageNumber >= numPages ? 0.5 : 1,
-              pointerEvents: pageNumber >= numPages ? "none" : "auto",
-            }}
-          />
-          {/* Hide filename/details on mobile */}
-          <span
-            className="ml-2 px-2 py-1 rounded font-semibold bg-[#1e293b] text-blue-400 truncate hidden sm:inline-block"
-            style={{ maxWidth: 140 }}
-          >
-            {fileName}
-          </span>
-          <span
-            className="ml-2 text-xs text-gray-400 opacity-90 truncate hidden sm:inline-block"
-            style={{ maxWidth: 80 }}
-          >
-            PDF {fileSize && `| ${humanFileSize(fileSize)}`}
-          </span>
-        </div>
-        {/* Controls */}
-        <div className="flex flex-row flex-wrap gap-1 items-center justify-end">
-          <button
-            onClick={zoomOut}
-            disabled={zoom <= baseScale}
-            className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition disabled:opacity-40"
-            aria-label="Zoom Out"
-            type="button"
-          >
-            <FiMinus size={20} />
-          </button>
-          <span className="px-2 py-1 text-xs font-bold rounded bg-[#334155] text-blue-300 select-none min-w-[45px] text-center">
-            {Math.round(effectiveScale * 100)}%
-          </span>
-          <button
-            onClick={zoomIn}
-            disabled={zoom >= 2}
-            className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition disabled:opacity-40"
-            aria-label="Zoom In"
-            type="button"
-          >
-            <FiPlus size={20} />
-          </button>
-          <button
-            className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition"
-            title="Download"
-            onClick={() => window.open(fileUrl, "_blank")}
-          >
-            <FiDownload size={20} />
-          </button>
-          <button
-            className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition"
-            title="Print"
-            onClick={() => window.open(fileUrl, "_blank")}
-          >
-            <FiPrinter size={20} />
-          </button>
-          <button
-            className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition"
-            title="Share"
-            onClick={() =>
-              navigator.share
-                ? navigator.share({ url: fileUrl })
-                : window.open(fileUrl)
-            }
-          >
-            <FiShare2 size={20} />
-          </button>
-          <button
-            className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition"
-            title="Fullscreen"
-            onClick={() =>
-              document.documentElement.requestFullscreen &&
-              document.documentElement.requestFullscreen()
-            }
-          >
-            <FiMaximize2 size={20} />
-          </button>
-          {/* Page info always visible */}
-          <span className="px-2 py-1 ml-1 rounded bg-[#1e293b] text-blue-400 font-semibold min-w-[56px] text-center text-sm">
-            {pageNumber} <span className="text-gray-400">of</span> {numPages}
-          </span>
-        </div>
-      </div>
-
-      {/* PDF Center Card */}
-      <div
-        className="flex-1 w-full max-w-4xl mx-auto p-4 overflow-auto"
+        className="flex-1 overflow-auto flex justify-center items-start p-4"
         style={{ minHeight: 0 }}
       >
-        <div
-          className="bg-[#181a20] shadow-2xl rounded-xl mx-auto flex items-center justify-center"
-          style={{
-            minWidth: 250,
-            maxWidth: 800,
-            padding: "1.5rem 0.5rem",
-            border: "2px solid #272a36",
-          }}
-        >
-          <Document
-            file={fileUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            loading={
-              <div className="text-center text-gray-400">Loading PDF...</div>
-            }
-            options={pdfOptions}
-          >
-            <Page
-              pageNumber={pageNumber}
-              scale={effectiveScale}
-              onLoadSuccess={onPageLoadSuccess}
-              loading={
-                <div className="text-center text-gray-400">Loading Page...</div>
-              }
-              className="shadow-lg rounded-lg bg-white"
-            />
-          </Document>
-        </div>
+        <PdfPageHighlights
+          fileUrl={fileUrl}
+          pageNumber={pageNumber}
+          scale={effectiveScale}
+          pdfOptions={pdfOptions}
+          onPageLoadSuccess={onPageLoadSuccess}
+          highlights={highlights}
+          pageContainerRef={pdfPageRef}
+          handleTextSelection={handleHighlightSelection}
+        />
       </div>
     </div>
   );
