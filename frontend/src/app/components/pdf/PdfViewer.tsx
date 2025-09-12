@@ -5,6 +5,7 @@ import Toolbar from "./Toolbar";
 import PdfPageHighlights from "./PdfPageWithHighlights";
 import useWindowSize from "../../hooks/useWindowSize";
 import { pdfjs } from "react-pdf";
+import { savePdfWithHighlights } from "@/app/utils/pdfUtils";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.js";
 
@@ -38,6 +39,7 @@ export default function PdfViewer({
     width: number;
     height: number;
   } | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const windowSize = useWindowSize();
 
   const pdfOptions = useMemo(
@@ -106,7 +108,16 @@ export default function PdfViewer({
     if (!pdfPageRef.current) return;
 
     const range = sel.getRangeAt(0);
-    const containerRect = pdfPageRef.current.getBoundingClientRect();
+
+    // CRITICAL FIX: Find the actual Page canvas element, not the padded container
+    const pageElement =
+      pdfPageRef.current.querySelector("canvas") ||
+      pdfPageRef.current.querySelector(".react-pdf__Page__canvas") ||
+      pdfPageRef.current.querySelector(".react-pdf__Page");
+
+    if (!pageElement) return;
+
+    const pageRect = pageElement.getBoundingClientRect();
 
     const rects: {
       top: number;
@@ -118,12 +129,9 @@ export default function PdfViewer({
     for (let i = 0; i < range.getClientRects().length; i++) {
       const r = range.getClientRects()[i];
       rects.push({
-        top:
-          (r.top - containerRect.top + pdfPageRef.current.scrollTop) /
-          effectiveScale,
-        left:
-          (r.left - containerRect.left + pdfPageRef.current.scrollLeft) /
-          effectiveScale,
+        // Use pageRect (actual canvas) instead of containerRect (padded wrapper)
+        top: (r.top - pageRect.top) / effectiveScale,
+        left: (r.left - pageRect.left) / effectiveScale,
         width: r.width / effectiveScale,
         height: r.height / effectiveScale,
       });
@@ -137,6 +145,21 @@ export default function PdfViewer({
     ]);
     sel.removeAllRanges();
   }, [pageNumber, effectiveScale]);
+
+  // Save handler (calls pdf-utils)
+  const handleSave = useCallback(async () => {
+    if (!fileUrl || highlights.length === 0) return;
+    setIsSaving(true);
+    try {
+      await savePdfWithHighlights(
+        fileUrl,
+        highlights as any[],
+        fileName || "highlighted.pdf"
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }, [fileUrl, highlights, fileName]);
 
   if (!fileUrl) {
     return <div className="text-center p-6 text-red-500">No PDF loaded</div>;
@@ -158,9 +181,12 @@ export default function PdfViewer({
         zoomIn={zoomIn}
         zoomOut={zoomOut}
         fileUrl={fileUrl}
-        highlightsCount={highlights.length} // Pass highlight count
-        onUndoHighlight={() => setHighlights(highlights.slice(0, -1))} // Pass undo function
+        highlightsCount={highlights.length}
+        onUndoHighlight={() => setHighlights((h) => h.slice(0, -1))}
+        onSave={handleSave}
+        isSaving={isSaving}
       />
+
       <div
         className="flex-1 overflow-auto flex justify-center items-start p-4"
         style={{ minHeight: 0 }}

@@ -32,7 +32,7 @@ export default function PdfPageWithHighlights({
     <div
       ref={pageContainerRef}
       onMouseUp={handleTextSelection}
-      className="relative"
+      // Outer chrome only; not the positioning parent
       style={{
         display: "inline-block",
         backgroundColor: "#181a20",
@@ -43,27 +43,6 @@ export default function PdfPageWithHighlights({
         padding: "1.5rem 0.5rem",
       }}
     >
-      {highlights
-        .filter((h) => h.pageNumber === pageNumber)
-        .map((highlight) =>
-          highlight.rects.map((rect, idx) => (
-            <div
-              key={highlight.id + idx}
-              style={{
-                position: "absolute",
-                top: rect.top * scale,
-                left: rect.left * scale,
-                width: rect.width * scale,
-                height: rect.height * scale,
-                backgroundColor: "rgba(255, 255, 0, 0.4)",
-                pointerEvents: "none",
-                borderRadius: 2,
-                border: "1px solid rgba(255,255,0,0.7)",
-                zIndex: 999,
-              }}
-            />
-          ))
-        )}
       <Document
         file={fileUrl}
         options={pdfOptions}
@@ -71,15 +50,54 @@ export default function PdfPageWithHighlights({
           <div className="text-center text-gray-400">Loading PDF...</div>
         }
       >
-        <Page
-          pageNumber={pageNumber}
-          scale={scale}
-          onLoadSuccess={onPageLoadSuccess}
-          loading={
-            <div className="text-center text-gray-400">Loading Page...</div>
-          }
-          className="shadow-lg rounded-lg bg-white"
-        />
+        {/* Positioning wrapper for the Page. No padding/border here. */}
+        <div
+          className="relative inline-block"
+          style={{
+            lineHeight: 0, // avoids extra space around the canvas
+          }}
+        >
+          <Page
+            pageNumber={pageNumber}
+            scale={scale}
+            onLoadSuccess={onPageLoadSuccess}
+            loading={
+              <div className="text-center text-gray-400">Loading Page...</div>
+            }
+            className="shadow-lg rounded-lg bg-white"
+          />
+
+          {/* Absolute overlay bound exactly to the Page box */}
+          <div
+            className="pointer-events-none"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 5,
+            }}
+          >
+            {highlights
+              .filter((h) => h.pageNumber === pageNumber)
+              .map((highlight) =>
+                highlight.rects.map((rect, idx) => (
+                  <div
+                    key={highlight.id + idx}
+                    style={{
+                      position: "absolute",
+                      top: rect.top * scale,
+                      left: rect.left * scale,
+                      width: rect.width * scale,
+                      height: rect.height * scale,
+                      backgroundColor: "rgba(255, 255, 0, 0.4)",
+                      border: "1px solid rgba(255,255,0,0.7)",
+                      borderRadius: 2,
+                      pointerEvents: "none",
+                    }}
+                  />
+                ))
+              )}
+          </div>
+        </div>
       </Document>
     </div>
   );

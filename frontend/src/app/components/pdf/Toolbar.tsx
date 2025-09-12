@@ -24,8 +24,10 @@ interface ToolbarProps {
   zoomIn: () => void;
   zoomOut: () => void;
   fileUrl: string;
-  highlightsCount: number; // added
-  onUndoHighlight: () => void; // added
+  highlightsCount: number;
+  onUndoHighlight: () => void;
+  onSave: () => void; // added
+  isSaving: boolean; // added
 }
 
 function humanFileSize(size?: string) {
@@ -56,8 +58,10 @@ export default function Toolbar({
   zoomIn,
   zoomOut,
   fileUrl,
-  highlightsCount, // added
-  onUndoHighlight, // added
+  highlightsCount,
+  onUndoHighlight,
+  onSave, // added
+  isSaving, // added
 }: ToolbarProps) {
   return (
     <div
@@ -110,6 +114,7 @@ export default function Toolbar({
           PDF {fileSize && `| ${humanFileSize(fileSize)}`}
         </span>
       </div>
+
       {/* Controls */}
       <div className="flex flex-row flex-wrap gap-1 items-center justify-end">
         <button
@@ -121,9 +126,11 @@ export default function Toolbar({
         >
           <FiMinus size={20} />
         </button>
+
         <span className="px-2 py-1 text-xs font-bold rounded bg-[#334155] text-blue-300 select-none min-w-[45px] text-center">
           {Math.round(effectiveScale * 100)}%
         </span>
+
         <button
           onClick={zoomIn}
           disabled={zoom >= 2}
@@ -134,7 +141,7 @@ export default function Toolbar({
           <FiPlus size={20} />
         </button>
 
-        {/* Undo Highlight Button */}
+        {/* Undo */}
         <button
           onClick={onUndoHighlight}
           disabled={highlightsCount === 0}
@@ -145,13 +152,25 @@ export default function Toolbar({
           Undo
         </button>
 
+        {/* Save highlighted PDF */}
+        <button
+          onClick={onSave}
+          disabled={isSaving || highlightsCount === 0}
+          className="p-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          title="Save highlighted PDF"
+          type="button"
+        >
+          {isSaving ? "Saving..." : "Save"}
+        </button>
+
         <button
           className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition"
-          title="Download"
+          title="Download original"
           onClick={() => window.open(fileUrl, "_blank")}
         >
           <FiDownload size={20} />
         </button>
+
         <button
           className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition"
           title="Print"
@@ -159,6 +178,7 @@ export default function Toolbar({
         >
           <FiPrinter size={20} />
         </button>
+
         <button
           className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition"
           title="Share"
@@ -170,6 +190,7 @@ export default function Toolbar({
         >
           <FiShare2 size={20} />
         </button>
+
         <button
           className="p-2 text-blue-300 bg-[#1e293b] rounded hover:text-blue-500 transition"
           title="Fullscreen"
@@ -180,6 +201,7 @@ export default function Toolbar({
         >
           <FiMaximize2 size={20} />
         </button>
+
         <span className="px-2 py-1 ml-1 rounded bg-[#1e293b] text-blue-400 font-semibold min-w-[56px] text-center text-sm">
           {pageNumber} <span className="text-gray-400">of</span> {numPages}
         </span>
