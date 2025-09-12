@@ -69,7 +69,7 @@ export default function Dashboard() {
       const mappedPdfs = rawPdfs.map((pdf: any) => ({
         id: pdf._id || pdf.id,
         name: pdf.originalName || pdf.name || "Untitled PDF",
-        status: pdf.status || "Pending",
+        status: "Ready", // Changed from "Pending" to "Ready" or remove status altogether
         uploaded: pdf.uploadDate || pdf.uploaded || new Date().toISOString(),
         thumbnail: pdf.thumbnail || undefined,
       }));
