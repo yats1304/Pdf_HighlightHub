@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 const PdfViewer = dynamic(() => import("../../components/pdf/PdfViewer"), {
   ssr: false,
 });
@@ -25,14 +27,14 @@ export default function PdfDetailPage() {
       const token = localStorage.getItem("token");
 
       try {
-        const res = await fetch(`http://localhost:5000/api/pdfs/${pdfId}`, {
+        const res = await fetch(`${API_BASE_URL}/api/pdfs/${pdfId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to fetch PDF");
 
         const pdf = await res.json();
 
-        setFileUrl(`http://localhost:5000/uploads/${pdf.filename}`);
+        setFileUrl(`${API_BASE_URL}/uploads/${pdf.filename}`);
       } catch (e: any) {
         setError(e.message || "Error loading PDF");
         setFileUrl("");

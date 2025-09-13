@@ -5,6 +5,8 @@ import Header from "./Header";
 import PdfList from "./PdfList";
 import ActivityList from "./ActivityList";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 interface PDF {
   id: string;
   name: string;
@@ -51,10 +53,10 @@ export default function Dashboard() {
       }
 
       const [pdfsRes, activityRes] = await Promise.all([
-        fetch("http://localhost:5000/api/pdfs", {
+        fetch(`${API_BASE_URL}api/pdfs`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("http://localhost:5000/api/activity", {
+        fetch(`${API_BASE_URL}/api/activity`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -101,7 +103,7 @@ export default function Dashboard() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/pdfs/${pdfId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/pdfs/${pdfId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import React, { useRef, useState } from "react";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 interface PDF {
   id: string;
   name: string;
@@ -44,7 +46,7 @@ export default function PdfList({
       const formData = new FormData();
       formData.append("pdf", file);
 
-      const res = await fetch("http://localhost:5000/api/pdfs/uploads", {
+      const res = await fetch(`${API_BASE_URL}/api/pdfs/uploads`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
