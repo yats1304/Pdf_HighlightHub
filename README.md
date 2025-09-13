@@ -1,6 +1,6 @@
 # PDF Highlight Hub
 
-A modern full-stack web application for annotating, highlighting, and managing PDF documents with advanced search capabilities.
+A modern full-stack web application for annotating, highlighting..
 
 ![PDF Highlight Hub](https://img.shields.io/badge/Next.js-15.5.2-black?style=flat-square&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?style=flat-square&logo=typescript)
