@@ -16,18 +16,16 @@ dotenv.config();
 const app = express();
 
 // Configure CORS with options
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "https://pdf-highlight-hub.vercel.app",
-      "https://pdf-highlighthub.onrender.com",
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: [
+    "http://localhost:3000",
+    "https://pdf-highlight-hub.vercel.app",
+    "https://pdf-highlighthub.onrender.com",
+  ],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
 app.use(express.json());
 app.use(cors(corsOptions));
